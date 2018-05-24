@@ -35,5 +35,75 @@ describe("Campaigns", () =>{
   it('Deploys a factory and a campaign', () =>{
     assert.ok(factory.options.address);
     assert.ok(campaign.options.address);
-  })
-})
+  });
+
+  it('Marks caller as the campaign manager', async () => {
+    const manager = await campaign.methods.manager().call();
+    assert.equal(accounts[0], manager);
+  });
+
+  it('allows peopel to contribute money and marks them as approvers', async ()=>{
+    await campaign.methods.contribute().send({
+      from: accounts[2],
+      value:'55555'
+    });
+    const isContributor = await campaign.methods.approvers(accounts[2]).call();
+    assert(isContributor);
+  });
+
+  it('requires a minimum contribution', async () => {
+    try {
+      await campaign.methods.contribute().send({
+        value:'15',
+        from: accounts[1]
+      });
+      assert(false);
+    } catch (err) {
+      assert(err);
+    }
+  });
+
+  it('allows a manager to make a payment request', async () => {
+    await campaign.methods
+      .createRequest('buy hambergers', '10000', accounts[3]).send({
+        from: accounts[0],
+        gas: '1000000'
+      });
+    const request = await campaign.methods.requests(0).call();
+    assert.equal('buy hambergers', request.description);
+  });
+
+  it('processes requests', async () => {
+    await campaign.methods.contribute().send({
+      from: accounts[0],
+      value: web3.utils.toWei('10', 'ether')
+    });
+
+    await campaign.methods
+      .createRequest('Buy a thing', web3.utils.toWei('5','ether'), accounts[1])
+      .send( {
+        from: accounts[0],
+        gas: '1000000'
+    });
+    let startBalance = await web3.eth.getBalance(accounts[1]);
+    startBalance = web3.utils.fromWei(startBalance, 'ether');
+    startBalance = parseFloat(startBalance);
+
+    await campaign.methods.approveRequest(0).send({
+      from: accounts[0],
+      gas: '1000000'
+    });
+
+    await campaign.methods.finalizedRequest(0).send({
+      from: accounts[0],
+      gas: '1000000'
+    });
+
+  let finalBalance = await web3.eth.getBalance(accounts[1]);
+  finalBalance = web3.utils.fromWei(finalBalance, 'ether');
+  finalBalance = parseFloat(finalBalance);
+
+  assert(finalBalance > 4.9 + startBalance);
+
+  });
+});
