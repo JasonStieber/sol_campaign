@@ -15,7 +15,7 @@ contract CampaignFactory {
 
 contract Campaign {
   struct Request {
-      string desciption;
+      string description;
       uint value;
       address recipient;
       bool complete;
@@ -44,10 +44,10 @@ contract Campaign {
       approversCount++;
   }
 
-  function createRequest(string desciption, uint value, address recipient)
+  function createRequest(string description, uint value, address recipient)
         public restricted {
     Request memory newRequest = Request({
-       desciption: desciption,
+       description: description,
        value: value,
        recipient: recipient,
        complete: false,
